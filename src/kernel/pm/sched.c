@@ -94,15 +94,28 @@ PUBLIC void yield(void)
 		if (p->state != PROC_READY)
 			continue;
 		
-		/*
-		 * Process with higher
-		 * waiting time found.
+
+		/* ===== IL FAUT CHOISIR UNE DES STRATEGIES DE SCHEDULING (DECOMMENTER UN DES IF) ===== */
+
+		// Process with higher waiting time found.
+//		if (p->counter > next->counter)
+
+//		if (p->priority + p->nice < next->priority + next->nice || (p->priority + p->nice == next->priority + next->nice && p->counter > next->counter))
+
+		/* On vérifie que le processus p a une priorité statique (priority) plus petite (+ importante) que next, si c'est le cas, on le sélectionne
+		 * S'ils ont la même priorité statique, on vérifie leurs priorités utilisateur (nice), et on sélectionne p si sa priorité est plus petite (+ importante)
+		 * S'ils ont les mêmes priorités statique et utilisateur, on vérifie leurs priorités dynamique (counter), et on sélectionne p si sa priorité est plus grande (+ importante)
 		 */
-		if (p->counter > next->counter)
+//		if (p->priority < next->priority || (p->priority == next->priority && p->nice < next->nice) || (p->priority == next->priority && p->nice == next->nice && p->counter > next->counter))
+
+		/* On somme les priorités statique, utilisateur et dynamique (on la soustrait) des processus et on prend celui qui a la plus faible */
+		if (p->priority + p->nice - p->counter < next->priority + next->nice - next->counter)
 		{
 			next->counter++;
 			next = p;
 		}
+
+
 			
 		/*
 		 * Increment waiting
