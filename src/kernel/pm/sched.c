@@ -86,30 +86,18 @@ PUBLIC void yield(void)
 			p->alarm = 0, sndsig(p, SIGALRM);
 	}
 
-	/* Choose a process to run next. */
 	next = IDLE;
-	for (p = FIRST_PROC; p <= LAST_PROC; p++)
-	{
-		/* Skip non-ready process. */
-		if (p->state != PROC_READY)
-			continue;
-		
-		/*
-		 * Process with higher
-		 * waiting time found.
-		 */
-		if (p->counter > next->counter)
-		{
-			next->counter++;
-			next = p;
+	struct process *ip[PROC_MAX];
+	int len = 0;
+	for(p = FIRST_PROC; p <= LAST_PROC; p++) {
+		if(IS_VALID(p) && p->state == PROC_READY) {
+			ip[len] = p;
+			len++;
 		}
-			
-		/*
-		 * Increment waiting
-		 * time of process.
-		 */
-		else
-			p->counter++;
+	}
+	
+	if (len >= 1) {
+		next = ip[ticks % len];
 	}
 	
 	/* Switch to next process. */
