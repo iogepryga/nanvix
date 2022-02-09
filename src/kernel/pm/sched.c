@@ -94,22 +94,14 @@ PUBLIC void yield(void)
 	// 	if(p->state == PROC_READY)
 	// 		next = p;
 	// }
-	if(curr_proc == LAST_PROC) {
-		for(p = FIRST_PROC; next == IDLE && p <= LAST_PROC; p++) {
-			if(p->state == PROC_READY) {
-				next = p;
-			}
+	for( p = curr_proc + 1; next == IDLE && p <= LAST_PROC ; p++) {
+		if(p->state == PROC_READY) {
+			next = p;
 		}
-	} else {
-		for( p = curr_proc + 1; next == IDLE && p <= LAST_PROC ; p++) {
-			if(p->state == PROC_READY) {
-				next = p;
-			}
-		}
-		for( p = FIRST_PROC; next == IDLE && p <= curr_proc; p++) {
-			if(p->state == PROC_READY) {
-				next = p;
-			}
+	}
+	for( p = FIRST_PROC; next == IDLE && p <= curr_proc; p++) {
+		if(p->state == PROC_READY) {
+			next = p;
 		}
 	}
 	
