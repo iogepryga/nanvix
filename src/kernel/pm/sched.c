@@ -87,17 +87,21 @@ PUBLIC void yield(void)
 	}
 
 	next = IDLE;
-	struct process *ip[PROC_MAX];
 	int len = 0;
 	for(p = FIRST_PROC; p <= LAST_PROC; p++) {
 		if(IS_VALID(p) && p->state == PROC_READY) {
-			ip[len] = p;
 			len++;
 		}
 	}
 	
 	if (len >= 1) {
-		next = ip[ticks % len];
+		len = (ticks % len) + 1;
+		for(p = FIRST_PROC; p <= LAST_PROC; p++) {
+			if(p->state == PROC_READY && --len == 0) {
+					next = p;
+					break;
+			}
+		}
 	}
 	
 	/* Switch to next process. */
