@@ -4,7 +4,10 @@
 
 
 PUBLIC int sys_semop(int semid, int op) {
-	// Not yet implemented
-
-	return -1;
+	if (op > 0)
+		return sem_up(semid);
+	else if (op < 0)
+		return sem_down(semid);
+	else
+		return -1;
 }

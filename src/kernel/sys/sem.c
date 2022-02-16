@@ -94,7 +94,7 @@ int sem_up(int semid) {
 	return semid;
 }
 
-int destroy(int semid) {
+int sem_destroy(int semid) {
 	if (semid < 0 || semid >= SEM_MAX)
 		return -1;
 
