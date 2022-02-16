@@ -1,7 +1,7 @@
 #include <nanvix/const.h>
-//#include <nanvix/pm.h>
 #include <nanvix/syscall.h>
-#include <sys/sem.h>
+//#include <nanvix/pm.h>
+//#include <sys/sem.h>
 
 
 
@@ -37,9 +37,4 @@ PUBLIC int sys_semget(unsigned key) {
 	// Si une sémaphore contenant la clé demandée a été trouvée, on retourne son identifiant
 	else
 		return i;
-}
-
-
-PUBLIC int semget(unsigned key) {
-	return sys_semget(key);
 }

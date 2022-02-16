@@ -1,7 +1,7 @@
 #include <nanvix/const.h>
-//#include <nanvix/pm.h>
 #include <nanvix/syscall.h>
-#include <sys/sem.h>
+//#include <nanvix/pm.h>
+//#include <sys/sem.h>
 
 
 
@@ -31,9 +31,4 @@ PUBLIC int sys_semctl(int semid, int cmd, int val) {
 		default:
 			return -1;
 	}
-}
-
-
-PUBLIC int semctl(int semid, int cmd, int val) {
-	return sys_semctl(semid, cmd, val);
 }

@@ -1,7 +1,7 @@
 #include <nanvix/const.h>
-//#include <nanvix/pm.h>
 #include <nanvix/syscall.h>
-#include <sys/sem.h>
+//#include <nanvix/pm.h>
+//#include <sys/sem.h>
 
 
 
@@ -16,9 +16,4 @@ PUBLIC int sys_semop(int semid, int op) {
 		return sem_down(semid);
 	else
 		return -1;
-}
-
-
-PUBLIC int semop(int semid, int op) {
-	return sys_semop(semid, op);
 }
