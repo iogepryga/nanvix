@@ -1,8 +1,14 @@
 #include <nanvix/const.h>
-#include <nanvix/pm.h>
+//#include <nanvix/pm.h>
+#include <nanvix/syscall.h>
+#include <sys/sem.h>
 
 
 
+// Effectue une opération sur une sémaphore
+// Si op est positif, on relâche la sémaphore
+// Si op est négatif, on demande à prendre la sémaphore
+// Sinon (op == 0), on retourne -1 (erreur)
 PUBLIC int sys_semop(int semid, int op) {
 	if (op > 0)
 		return sem_up(semid);
@@ -10,4 +16,9 @@ PUBLIC int sys_semop(int semid, int op) {
 		return sem_down(semid);
 	else
 		return -1;
+}
+
+
+PUBLIC int semop(int semid, int op) {
+	return sys_semop(semid, op);
 }

@@ -21,7 +21,7 @@
 #define SEM_H_
 
 	/**
-	 * @brief Comand values for semaphores.
+	 * @brief Command values for semaphores.
 	 */
 	/**@{*/
 	#define GETVAL   0 /**< Returns the value of a semaphore. */

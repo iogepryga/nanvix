@@ -1,13 +1,19 @@
 #include <nanvix/const.h>
-#include <nanvix/pm.h>
+//#include <nanvix/pm.h>
+#include <nanvix/syscall.h>
+#include <sys/sem.h>
 
 
 
+// Effectue une commande sur une sémaphore
+// Si cmd vaut GETVAL, on retourne le nombre de permissions disponibles de la sémaphore
+// Si cmd vaut SETVAL, on définit le nombre de permissions disponibles de la sémaphore à val
+// Si cmd vaut IPC_RMID, on demande la destruction de la sémaphore
 PUBLIC int sys_semctl(int semid, int cmd, int val) {
 	if (semid < 0 || semid >= SEM_MAX)
 		return -1;
 
-	struct sem *s = semtab[semid];
+	struct sem *s = &semtab[semid];
 
 	if (s->state == SEM_IDLE)
 		return -1;
@@ -25,4 +31,9 @@ PUBLIC int sys_semctl(int semid, int cmd, int val) {
 		default:
 			return -1;
 	}
+}
+
+
+PUBLIC int semctl(int semid, int cmd, int val) {
+	return sys_semctl(semid, cmd, val);
 }
