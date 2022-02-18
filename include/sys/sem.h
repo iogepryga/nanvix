@@ -29,6 +29,33 @@
 	#define IPC_RMID 3 /**< Destroys a semaphore.            */
 	/**@}*/
 
+    // Nombre maximal de sémaphores
+    #define SEM_MAX 64
+
+    // Définition de la première et de la dernière sémaphore (pointeurs de structure)
+    #define FIRST_SEM ((&semtab[0]))
+    #define LAST_SEM ((&semtab[SEM_MAX-1]))
+
+    // Etats possibles des sémaphores
+    #define SEM_IDLE 0
+    #define SEM_ACTIVE 1
+
+
+    #ifndef _ASM_FILE_
+
+    // Structure de sémaphore
+    struct sem {
+        unsigned state; // Etat de la sémaphore
+        unsigned count; // Nombre de permissions de la sémaphore
+        unsigned key;   // Clé associée à la sémaphore
+
+        struct process **queue; // Processus en file d'attente
+    };
+
+    #endif /* _ASM_FILE_ */
+
+
+
 	/* Forward definitions. */
 	extern int semget(unsigned);
 	extern int semctl(int, int, int);

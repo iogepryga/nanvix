@@ -4,28 +4,6 @@
 
 
 
-// Structure de sémaphore
-struct sem {
-	unsigned state; // Etat de la sémaphore
-	unsigned count; // Nombre de permissions de la sémaphore
-	unsigned key;   // Clé associée à la sémaphore
-
-	struct process **queue; // Processus en file d'attente
-};
-
-
-// Nombre maximal de sémaphores
-#define SEM_MAX 64
-
-// Définition de la première et de la dernière sémaphore (pointeurs de structure)
-#define FIRST_SEM ((&semtab[0]))
-#define LAST_SEM ((&semtab[SEM_MAX-1]))
-
-// Etats possibles des sémaphores
-#define SEM_IDLE 0
-#define SEM_ACTIVE 1
-
-
 // Tableau des structures sémaphores (l'ID d'une sémaphore est sa place dans le tableau : 0 .. SEM_MAX-1)
 PUBLIC struct sem semtab[SEM_MAX];
 
