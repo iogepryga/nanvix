@@ -438,12 +438,12 @@ int semaphore_test3(void)
 	if (buffer_fd < 0)
 		return (-1);
 	
-	/* Create semaphores. */
+	/* Create semaphores. */   // (assert(((a) = semget(b)) >= 0))
 	SEM_CREATE(mutex, 1);
 	SEM_CREATE(empty, 2);
 	SEM_CREATE(full, 3);
 		
-	/* Initialize semaphores. */
+	/* Initialize semaphores. */   // (assert(semctl((a), SETVAL, (b)) == 0))
 	SEM_INIT(full, 0);
 	SEM_INIT(empty, BUFFER_SIZE);
 	SEM_INIT(mutex, 1);
@@ -456,12 +456,13 @@ int semaphore_test3(void)
 	{
 		for (int item = 0; item < NR_ITEMS; item++)
 		{
-			SEM_DOWN(empty);
+			SEM_DOWN(empty);   // (assert(semop((x), -1) == 0))
 			SEM_DOWN(mutex);
 			
-			PUT_ITEM(buffer_fd, item);
+			PUT_ITEM(buffer_fd, item);   // assert(lseek((a), 0, SEEK_SET) != -1);
+										 // assert(write((a), &(b), sizeof(b)) == sizeof(b));
 				
-			SEM_UP(mutex);
+			SEM_UP(mutex);   // (assert(semop((x), 1) == 0))
 			SEM_UP(full);
 		}
 

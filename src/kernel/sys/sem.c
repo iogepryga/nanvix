@@ -4,9 +4,6 @@
 
 
 
-// Tableau des structures sémaphores (l'ID d'une sémaphore est sa place dans le tableau : 0 .. SEM_MAX-1)
-PUBLIC struct sem semtab[SEM_MAX];
-
 // Nombre de sémaphores actives
 PUBLIC unsigned nsems = 0;
 

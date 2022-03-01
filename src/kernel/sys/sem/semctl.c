@@ -25,9 +25,10 @@ PUBLIC int sys_semctl(int semid, int cmd, int val) {
 
 		case SETVAL:
 			s->count = val;
+			return val;
 
 		case IPC_RMID:
-			return sem_destroy(semid)
+			return sem_destroy(semid);
 
 		default:
 			return -1;
