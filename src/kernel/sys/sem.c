@@ -58,7 +58,7 @@ int sem_down(int semid) {
 	else
 		s->count--;
 
-	return semid;
+	return 0;
 }
 
 // Relâche une sémaphore, et réveille le premier processus en attente
@@ -74,7 +74,7 @@ int sem_up(int semid) {
 	wakeup(s->queue);
 	s->count++;
 
-	return semid;
+	return 0;
 }
 
 // Détruit une sémaphore, et la rend disponible pour une future initialisation
