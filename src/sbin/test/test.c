@@ -438,12 +438,12 @@ int semaphore_test3(void)
 	if (buffer_fd < 0)
 		return (-1);
 	
-	/* Create semaphores. */   // (assert(((a) = semget(b)) >= 0))
+	/* Create semaphores. */
 	SEM_CREATE(mutex, 1);
 	SEM_CREATE(empty, 2);
 	SEM_CREATE(full, 3);
 		
-	/* Initialize semaphores. */   // (assert(semctl((a), SETVAL, (b)) == 0))
+	/* Initialize semaphores. */
 	SEM_INIT(full, 0);
 	SEM_INIT(empty, BUFFER_SIZE);
 	SEM_INIT(mutex, 1);
@@ -454,26 +454,16 @@ int semaphore_test3(void)
 	/* Producer. */
 	else if (pid == 0)
 	{
-		printf("PID == 0: producer\n");
-		printf("Looping on %d items...\n", NR_ITEMS);
 		for (int item = 0; item < NR_ITEMS; item++)
 		{
-			printf("\nItem %d\n", item);
-			SEM_DOWN(empty);   // (assert(semop((x), -1) == 0))
-			printf("  SEM_DOWN(empty): passed.\n");
+			SEM_DOWN(empty);
 			SEM_DOWN(mutex);
-			printf("  SEM_DOWN(mutex): passed.\n");
 			
-			PUT_ITEM(buffer_fd, item);   // assert(lseek((a), 0, SEEK_SET) != -1);
-										 // assert(write((a), &(b), sizeof(b)) == sizeof(b));
-			printf("  PUT_ITEM(buffer_fd, %d): passed.\n", item);
+			PUT_ITEM(buffer_fd, item);
 				
-			SEM_UP(mutex);   // (assert(semop((x), 1) == 0))
-			printf("  SEM_UP(mutex): passed.\n");
+			SEM_UP(mutex);
 			SEM_UP(full);
-			printf("  SEM_UP(full): passed.\n");
 		}
-		printf("\nLoop passed.\n");
 
 		_exit(EXIT_SUCCESS);
 	}
@@ -481,40 +471,24 @@ int semaphore_test3(void)
 	/* Consumer. */
 	else
 	{
-		printf("PID != 0: consumer\n");
-		printf("Looping...");
-
 		int item;
 		
 		do
 		{
-			printf("\nItem\n");
-
 			SEM_DOWN(full);
-			printf("  SEM_DOWN(full): passed.\n");
 			SEM_DOWN(mutex);
-			printf("  SEM_DOWN(mutex): passed.\n");
 			
-			GET_ITEM(buffer_fd, item);   // assert(lseek((a), 0, SEEK_SET) != -1);
-										 // assert(read((a), &(b), sizeof(b)) == sizeof(b));
-			printf("  GET_ITEM(buffer_fd, %d): passed.\n", item);
+			GET_ITEM(buffer_fd, item);
 				
 			SEM_UP(mutex);
-			printf("  SEM_UP(mutex): passed.\n");
 			SEM_UP(empty);
-			printf("  SEM_UP(empty): passed.\n");
 		} while (item != (NR_ITEMS - 1));
-
-		printf("\nLoop passed.\n");
 	}
 					
-	/* Destroy semaphores. */ // (assert(semctl((x), IPC_RMID, 0) == 0))
+	/* Destroy semaphores. */
 	SEM_DESTROY(mutex);
-	printf("  SEM_DESTROY(mutex): passed.\n");
 	SEM_DESTROY(empty);
-	printf("  SEM_DESTROY(empty): passed.\n");
 	SEM_DESTROY(full);
-	printf("  SEM_DESTROY(full): passed.\n");
 	
 	close(buffer_fd);
 	unlink("buffer");

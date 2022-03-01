@@ -53,10 +53,10 @@ int sem_down(int semid) {
 	if (s->state == SEM_IDLE)
 		return -1;
 
-	if (s->count == 0)
-		sleep(s->queue, curr_proc->priority);
-	else
-		s->count--;
+	while (s->count <= 0)
+		sleep(curr_proc->chain, curr_proc->priority);
+	
+	s->count--;
 
 	return 0;
 }
@@ -71,7 +71,7 @@ int sem_up(int semid) {
 	if (s->state == SEM_IDLE)
 		return -1;
 
-	wakeup(s->queue);
+	wakeup(curr_proc->chain);
 	s->count++;
 
 	return 0;
