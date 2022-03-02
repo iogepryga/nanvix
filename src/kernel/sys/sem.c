@@ -17,7 +17,6 @@ PUBLIC void sem_init(void) {
 		s->state = SEM_IDLE;
 		s->count = 0;
 		s->key = 0;
-		s->queue = NULL;
 	}
 }
 
@@ -36,7 +35,6 @@ int sem_create(int semid, unsigned key, int n) {
 	s->state = SEM_ACTIVE;
 	s->count = n;
 	s->key = key;
-	s->queue = NULL;
 
 	nsems++;
 
@@ -91,7 +89,6 @@ int sem_destroy(int semid) {
 	s->state = SEM_IDLE;
 	s->count = 0;
 	s->key = 0;
-	s->queue = NULL;
 
 	nsems--;
 
