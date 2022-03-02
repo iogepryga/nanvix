@@ -25,6 +25,8 @@
         unsigned state; // Etat de la sémaphore
         unsigned count; // Nombre de permissions de la sémaphore
         unsigned key;   // Clé associée à la sémaphore
+
+        struct process *waiting_queue;
     };
 
     // Nombre maximal de sémaphores

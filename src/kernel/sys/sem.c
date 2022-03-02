@@ -17,6 +17,7 @@ PUBLIC void sem_init(void) {
 		s->state = SEM_IDLE;
 		s->count = 0;
 		s->key = 0;
+		s->waiting_queue = NULL;
 	}
 }
 
@@ -35,6 +36,7 @@ int sem_create(int semid, unsigned key, int n) {
 	s->state = SEM_ACTIVE;
 	s->count = n;
 	s->key = key;
+	s->waiting_queue = NULL;
 
 	nsems++;
 
@@ -52,7 +54,7 @@ int sem_down(int semid) {
 		return -1;
 
 	while (s->count <= 0)
-		sleep(curr_proc->chain, curr_proc->priority);
+		sleep(&(s->waiting_queue), curr_proc->priority);
 	
 	s->count--;
 
@@ -69,7 +71,7 @@ int sem_up(int semid) {
 	if (s->state == SEM_IDLE)
 		return -1;
 
-	wakeup(curr_proc->chain);
+	wakeup_single(&(s->waiting_queue));
 	s->count++;
 
 	return 0;
@@ -89,6 +91,7 @@ int sem_destroy(int semid) {
 	s->state = SEM_IDLE;
 	s->count = 0;
 	s->key = 0;
+	s->waiting_queue = NULL;
 
 	nsems--;
 
