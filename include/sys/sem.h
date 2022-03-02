@@ -50,6 +50,7 @@
     #define SEM_IDLE 0
     #define SEM_ACTIVE 1
 
+    // Fonctions permettant la manipulation des sémaphores, utilisées par semget, semctl et semop
     int sem_create(int semid, unsigned key, int n);
     int sem_down(int semid);
     int sem_up(int semid);

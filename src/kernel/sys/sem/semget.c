@@ -1,7 +1,5 @@
 #include <nanvix/const.h>
 #include <sys/sem.h>
-//#include <nanvix/syscall.h>
-//#include <nanvix/pm.h>
 
 
 
