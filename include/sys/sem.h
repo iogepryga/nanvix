@@ -52,6 +52,9 @@
     #define SEM_IDLE 0
     #define SEM_ACTIVE 1
 
+    // Fonction permettant d'initialiser le tableau de sémaphores
+    void sem_init(void);
+
     // Fonctions permettant la manipulation des sémaphores, utilisées par semget, semctl et semop
     int sem_create(int semid, unsigned key, int n);
     int sem_down(int semid);
