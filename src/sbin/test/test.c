@@ -496,6 +496,144 @@ int semaphore_test3(void)
 	return (0);
 }
 
+/**
+ * @brief Producer-Consumer problem with semaphores, with more processes.
+ * 
+ * @details Reproduces consumer-producer scenario using semaphores.
+ * 
+ * @returns Zero if passed on test, and non-zero otherwise.
+ */
+int semaphore_test4(int nr_prod, int nr_cons)
+{
+	printf("Test IPC: %d producers, %d consumers.\n", nr_prod, nr_cons);
+
+	pid_t pid;                  /* Process ID.              */
+	int buffer_fd;              /* Buffer file descriptor.  */
+	int empty;                  /* Empty positions.         */
+	int full;                   /* Full positions.          */
+	int mutex;                  /* Mutex.                   */
+	int is_prod = 0;
+	int is_cons = 0;
+	int pid2 = 0;
+	const int BUFFER_SIZE = 32; /* Buffer size.             */
+	const int NR_ITEMS = 512;   /* Number of items to send. */
+	
+	/* Create buffer.*/
+	buffer_fd = open("buffer", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	if (buffer_fd < 0)
+		return (-1);
+	
+	/* Create semaphores. */
+	SEM_CREATE(mutex, 1);
+	SEM_CREATE(empty, 2);
+	SEM_CREATE(full, 3);
+		
+	/* Initialize semaphores. */
+	SEM_INIT(full, 0);
+	SEM_INIT(empty, BUFFER_SIZE);
+	SEM_INIT(mutex, 1);
+	
+	// Current process creates producer processes
+	for (int i = 0; i < nr_prod; i++) {
+		pid = fork();
+		if (pid < 0)
+			return (-1);
+		if (pid == 0) {
+			is_prod = 1;
+			break;
+		}
+		pid2++;
+	}
+
+	// Current process creates consumer processes
+	if (pid > 0) {
+		for (int i = 0; i < nr_cons - 1; i++) {
+			pid = fork();
+			if (pid < 0)
+				return (-1);
+			if (pid == 0)
+				break;
+			pid2++;
+		}
+		is_cons = 1;
+	}
+
+	/*
+	printf("PID: %d   PID2: %d   Is producer? %s   Is consumer? %s\n",
+		pid, pid2,
+		is_prod == 1 ? "true" : "false",
+		is_cons == 1 ? "true" : "false");
+	*/
+
+	
+	/* Producer. */
+	if (is_prod == 1)
+	{
+		for (int item = 0; item < NR_ITEMS; item++)
+		{
+			SEM_DOWN(empty);
+			SEM_DOWN(mutex);
+			
+			int value = item + (NR_ITEMS * pid2);
+			PUT_ITEM(buffer_fd, value);
+			/*
+			printf("Producer #%d put item %d/%d: %d\n",
+				pid2, item+1, NR_ITEMS, value);
+			*/
+				
+			SEM_UP(mutex);
+			SEM_UP(full);
+		}
+	}
+	
+	/* Consumer. */
+	else if (is_cons == 1)
+	{
+		int item;
+		int items_got = 0;
+		
+		do
+		{
+			SEM_DOWN(full);
+			SEM_DOWN(mutex);
+			
+			GET_ITEM(buffer_fd, item);
+			items_got++;
+			/*
+			printf("Consumer #%d got item %d/%d: %d   (item %d/%d from producer #%d)\n",
+				pid2, items_got, NR_ITEMS, item,
+				item%NR_ITEMS + 1, NR_ITEMS, item/NR_ITEMS);
+			*/
+				
+			SEM_UP(mutex);
+			SEM_UP(empty);
+		} while (items_got < NR_ITEMS);
+	}
+
+	if (pid == 0) {
+		//printf("Child process exited\n");
+		_exit(EXIT_SUCCESS);
+	} else {
+		int nr_childs = nr_prod + nr_cons - 1;
+		int status;
+		for (int i = 0; i < nr_childs; i++) {
+			wait(&status);
+			//printf("Parent noticed child ended.\n");
+		}
+		//printf("All childs have terminated.\n");
+	}
+					
+	/* Destroy semaphores. */
+	SEM_DESTROY(mutex);
+	SEM_DESTROY(empty);
+	SEM_DESTROY(full);
+	
+	close(buffer_fd);
+	unlink("buffer");
+	
+	return (0);
+}
+
 /*============================================================================*
  *                                FPU test                                    *
  *============================================================================*/
@@ -601,14 +739,54 @@ static void usage(void)
 	printf("Usage: test [options]\n\n");
 	printf("Brief: Performs regression tests on Nanvix.\n\n");
 	printf("Options:\n");
-	printf("  fpu   Floating Point Unit Test\n");
-	printf("  io    I/O Test\n");
-	printf("  ipc   Interprocess Communication Test\n");
-	printf("  swp   Swapping Test\n");
-	printf("  sched Scheduling Test\n");
+	printf("  fpu                    Floating Point Unit Test\n");
+	printf("  io                     I/O Test\n");
+	printf("  ipc [prods=1 cons=1]   Interprocess Communication Test\n");
+	printf("  swp                    Swapping Test\n");
+	printf("  sched                  Scheduling Test\n");
 	
 	exit(EXIT_SUCCESS);
 }
+
+
+
+int parse_int(char *str) {
+	int negative = str[0] == '-';
+	if (negative)
+		str++;
+
+
+	int length = 0;
+
+	while (str[length] != (char) 0)
+		length++;
+
+	if (length == 0)
+		return -1;
+
+
+	int factor = 1;
+
+	for (int i = 1; i < length; i++)
+		factor *= 10;
+
+
+	int res = 0;
+
+	for (int i = 0; i < length; i++) {
+		int digit = (int) str[i] - 0x30;
+		if (digit < 0 || digit > 9)
+			return -1;
+
+		res += digit * factor;
+		factor /= 10;
+	}
+
+
+	return negative ? -res : res;
+}
+
+
 
 /**
  * @brief System testing utility.
@@ -652,9 +830,25 @@ int main(int argc, char **argv)
 		/* IPC test. */
 		else if (!strcmp(argv[i], "ipc"))
 		{
-			printf("Interprocess Communication Tests\n");
-			printf("  producer consumer [%s]\n",
-				(!semaphore_test3()) ? "PASSED" : "FAILED");
+			if (argc == 2) {
+				printf("Interprocess Communication Tests\n");
+				printf("  producer consumer [%s]\n",
+					(!semaphore_test3()) ? "PASSED" : "FAILED");
+			} else if (argc == 4) {
+				int nr_prod = parse_int(argv[2]);
+				int nr_cons = parse_int(argv[3]);
+				if (nr_prod <= 0 || nr_cons <= 0) {
+					usage();
+					break;
+				}
+				printf("Interprocess Communication Tests\n");
+				printf("  %d producer%s, %d consumer%s [%s]\n",
+					nr_prod, nr_prod == 1 ? "" : "s",
+					nr_cons, nr_cons == 1 ? "" : "s",
+					(!semaphore_test4(nr_prod, nr_cons)) ? "PASSED" : "FAILED");
+				break;
+			} else
+				usage();
 		}
 
 		/* FPU test. */

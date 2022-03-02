@@ -71,7 +71,7 @@ int sem_up(int semid) {
 	if (s->state == SEM_IDLE)
 		return -1;
 
-	wakeup_single(&(s->waiting_queue));
+	wakeup(&(s->waiting_queue));
 	s->count++;
 
 	return 0;
