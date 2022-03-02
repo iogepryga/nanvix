@@ -516,7 +516,7 @@ int semaphore_test4(int nr_prod, int nr_cons)
 	int is_cons = 0;
 	int pid2 = 0;
 	const int BUFFER_SIZE = 32; /* Buffer size.             */
-	const int NR_ITEMS = 512;   /* Number of items to send. */
+	const int NR_ITEMS = 512;   /* Total number of items to send. */
 	
 	/* Create buffer.*/
 	buffer_fd = open("buffer", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -532,6 +532,8 @@ int semaphore_test4(int nr_prod, int nr_cons)
 	SEM_INIT(full, 0);
 	SEM_INIT(empty, BUFFER_SIZE);
 	SEM_INIT(mutex, 1);
+
+	int nr_items = NR_ITEMS / nr_prod;
 	
 	// Current process creates producer processes
 	for (int i = 0; i < nr_prod; i++) {
@@ -540,6 +542,8 @@ int semaphore_test4(int nr_prod, int nr_cons)
 			return (-1);
 		if (pid == 0) {
 			is_prod = 1;
+			if (i == nr_prod - 1)
+				nr_items += NR_ITEMS % nr_prod;
 			break;
 		}
 		pid2++;
@@ -547,12 +551,16 @@ int semaphore_test4(int nr_prod, int nr_cons)
 
 	// Current process creates consumer processes
 	if (pid > 0) {
+		nr_items = NR_ITEMS / nr_cons;
 		for (int i = 0; i < nr_cons - 1; i++) {
 			pid = fork();
 			if (pid < 0)
 				return (-1);
-			if (pid == 0)
+			if (pid == 0) {
+				if (i == nr_cons - 1)
+					nr_items += NR_ITEMS % nr_cons;
 				break;
+			}
 			pid2++;
 		}
 		is_cons = 1;
@@ -569,16 +577,16 @@ int semaphore_test4(int nr_prod, int nr_cons)
 	/* Producer. */
 	if (is_prod == 1)
 	{
-		for (int item = 0; item < NR_ITEMS; item++)
+		for (int item = 0; item < nr_items; item++)
 		{
 			SEM_DOWN(empty);
 			SEM_DOWN(mutex);
 			
-			int value = item + (NR_ITEMS * pid2);
+			int value = item + (pid2 * NR_ITEMS / nr_prod);
 			PUT_ITEM(buffer_fd, value);
 			/*
 			printf("Producer #%d put item %d/%d: %d\n",
-				pid2, item+1, NR_ITEMS, value);
+				pid2, item+1, nr_items, value);
 			*/
 				
 			SEM_UP(mutex);
@@ -600,14 +608,13 @@ int semaphore_test4(int nr_prod, int nr_cons)
 			GET_ITEM(buffer_fd, item);
 			items_got++;
 			/*
-			printf("Consumer #%d got item %d/%d: %d   (item %d/%d from producer #%d)\n",
-				pid2, items_got, NR_ITEMS, item,
-				item%NR_ITEMS + 1, NR_ITEMS, item/NR_ITEMS);
+			printf("Consumer #%d got item %d/%d: %d\n",
+				pid2, items_got, nr_items, item);
 			*/
 				
 			SEM_UP(mutex);
 			SEM_UP(empty);
-		} while (items_got < NR_ITEMS);
+		} while (items_got < nr_items);
 	}
 
 	if (pid == 0) {

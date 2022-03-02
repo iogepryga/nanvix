@@ -222,7 +222,6 @@
 
     EXTERN void sndsig(struct process *, int);
 	EXTERN void wakeup(struct process **);
-	EXTERN void wakeup_single(struct process **);
 	EXTERN void yield(void);
 	
 	/**

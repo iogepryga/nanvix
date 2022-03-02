@@ -103,30 +103,3 @@ PUBLIC void wakeup(struct process **chain)
 		*chain = (*chain)->next;
 	}
 }
-
-/**
- * @brief Wakes up the first process that is sleeping in a chain.
- * 
- * @param chain Chain of sleeping processes to be awaken.
- */
-PUBLIC void wakeup_single(struct process **chain)
-{	
-	/*
-	 * Wakeup idle process. Note that here we don't
-	 * schedule the idle process for execution, once
-	 * we expect that it is the only process in the
-	 * system and it is doing some busy-waiting. 
-	 */
-	if (idle_chain == chain)
-	{
-		idle_chain = NULL;
-		return;
-	}
-	
-	/* Wakeup the first sleeping process. */
-	if (*chain != NULL)
-	{
-		sched(*chain);
-		*chain = (*chain)->next;
-	}
-}
