@@ -120,6 +120,8 @@ PUBLIC void pm_init(void)
 	IDLE->alarm = 0;
 	IDLE->next = NULL;
 	IDLE->chain = NULL;
+
+	IDLE->lastframe = 0;
 	
 	nprocs++;
 
