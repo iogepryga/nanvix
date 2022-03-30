@@ -19,6 +19,7 @@
  */
 
 #include <assert.h>
+#include <nanvix/clock.h>
 #include <nanvix/config.h>
 #include <sys/times.h>
 #include <sys/wait.h>
@@ -51,7 +52,7 @@ static unsigned flags = VERBOSE | FULL;
  */
 static int swap_test(void)
 {
-	#define N 1280
+	#define N 900
 	int *a, *b, *c;
 	clock_t t0, t1;
 	struct tms timing;
@@ -73,20 +74,24 @@ static int swap_test(void)
 		b[i] = 1;
 		c[i] = 0;
 	}
+
+	printf("Initialisation finished\n");
 	
 	/* Multiply matrices. */
 	if (flags & (EXTENDED | FULL))
 	{	
 		for (int i = 0; i < N; i++)
 		{
+			printf("i = %d/%d\n",i,N);
 			for (int j = 0; j < N; j++)
 			{
-					
 				for (int k = 0; k < N; k++)
 					c[i*N + j] += a[i*N + k]*b[k*N + j];
 			}
 		}
 	}
+
+	printf("Multiplication finished\n");
 	
 	/* Check values. */
 	if (flags & FULL)
@@ -94,6 +99,163 @@ static int swap_test(void)
 		for (int i = 0; i < N*N; i++)
 		{
 			if (c[i] != N)
+				goto error3;
+		}
+	}
+	
+	/* House keeping. */
+	free(a);
+	free(b);
+	free(c);
+	
+	t1 = times(&timing);
+	
+	/* Print timing statistics. */
+	if (flags & VERBOSE)
+		printf("  Elapsed: %d\n", t1 - t0);
+	
+	return (0);
+
+error3:
+	free(c);
+error2:
+	free(b);
+error1:
+	free(a);
+error0:
+	return (-1);
+}
+
+/*============================================================================*
+ *                               frame_test                                    *
+ *============================================================================*/
+
+/**
+ * @brief Frame test module.
+ * 
+ * @details Forces swapping algorithms to be activated by performing a large
+ *          matrix multiplication operation that does not fit on memory.
+ * 
+ * @returns Zero if passed on test, and non-zero otherwise.
+ */
+static int frame_test1(int NB)
+{
+	int *a, *b, *c;
+	clock_t t0, t1;
+	struct tms timing;
+
+	/* Allocate matrices. */
+	if ((a = malloc(NB*NB*sizeof(int))) == NULL)
+		goto error0;
+	if ((b = malloc(NB*NB*sizeof(int))) == NULL)
+		goto error1;
+	if ((c = malloc(NB*NB*sizeof(int))) == NULL)
+		goto error2;
+		
+	t0 = times(&timing);
+	
+	/* Initialize matrices. */
+	for (int i = 0; i < NB*NB; i++)
+	{
+		a[i] = 1;
+		b[i] = 1;
+		c[i] = 0;
+	}
+
+	printf("Initialisation finished\n");
+	
+	/* Multiply matrices. */
+	if (flags & (EXTENDED | FULL))
+	{	
+		for (int i = 0; i < NB; i++)
+		{
+			printf("i = %d/%d\n",i,NB);
+			for (int j = 0; j < NB; j++)
+			{
+				for (int k = 0; k < N; k++)
+					c[i*NB + j] += a[i*NB + k]*b[k*NB + j];
+			}
+		}
+	}
+
+	printf("Multiplication finished\n");
+	
+	/* Check values. */
+	if (flags & FULL)
+	{
+		for (int i = 0; i < NB*NB; i++)
+		{
+			if (c[i] != NB)
+				goto error3;
+		}
+	}
+	
+	/* House keeping. */
+	free(a);
+	free(b);
+	free(c);
+	
+	t1 = times(&timing);
+	
+	/* Print timing statistics. */
+	if (flags & VERBOSE)
+		printf("  Elapsed: %d\n", t1 - t0);
+	
+	return (0);
+
+error3:
+	free(c);
+error2:
+	free(b);
+error1:
+	free(a);
+error0:
+	return (-1);
+}
+
+static int frame_test2(int NB)
+{
+	int *a, *b, *c;
+	clock_t t0, t1;
+	struct tms timing;
+
+	/* Allocate matrices. */
+	if ((a = malloc(NB*sizeof(int))) == NULL)
+		goto error0;
+	if ((b = malloc(NB*sizeof(int))) == NULL)
+		goto error1;
+	if ((c = malloc(NB*sizeof(int))) == NULL)
+		goto error2;
+		
+	t0 = times(&timing);
+	
+	/* Initialize matrices. */
+	for (int i = 0; i < NB; i++)
+	{
+		a[i] = 3;
+		b[i] = 1;
+		c[i] = 0;
+	}
+
+	printf("Initialisation finished\n");
+	
+	/* Multiply matrices. */
+	if (flags & (EXTENDED | FULL))
+	{	
+		for (int i = 0; i < NB; i++)
+		{
+			c[i] += a[i]*b[i];
+		}
+	}
+
+	printf("Multiplication finished\n");
+	
+	/* Check values. */
+	if (flags & FULL)
+	{
+		for (int i = 0; i < NB; i++)
+		{
+			if (c[i] != a[i] + 1)
 				goto error3;
 		}
 	}
@@ -635,6 +797,24 @@ int main(int argc, char **argv)
 			printf("Swapping Test\n");
 			printf("  Result:             [%s]\n",
 				(!swap_test()) ? "PASSED" : "FAILED");
+		}
+
+		/* Fill frame test. */
+		else if (!strcmp(argv[i], "frame1"))
+		{
+			int NB = ((int) argv[2][0]) - (int)'0';
+			printf("Frame Test\n");
+			printf("  Result:             [%s]\n",
+				(!frame_test1(NB*100)) ? "PASSED" : "FAILED");
+		}
+
+		/* Fill frame test. */
+		else if (!strcmp(argv[i], "frame1"))
+		{
+			int NB = ((int) argv[2][0]) - (int)'0';
+			printf("Frame Test\n");
+			printf("  Result:             [%s]\n",
+				(!frame_test2(NB*100)) ? "PASSED" : "FAILED");
 		}
 		
 		/* Scheduling test. */

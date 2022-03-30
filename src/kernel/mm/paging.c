@@ -27,6 +27,7 @@
 #include <nanvix/mm.h>
 #include <nanvix/region.h>
 #include <signal.h>
+// #include <stdio.h>
 #include "mm.h"
 
 /*
@@ -293,6 +294,7 @@ PRIVATE struct
 
 PRIVATE int allocf(void)
 {
+	// kprintf("NR_FRAMES : %d\n",NR_FRAMES);
 	int i;      /* Loop index.  */
 	// int oldest; /* Oldest page. */
 	
@@ -349,7 +351,13 @@ emptyframefound:
 	frames[i].age = ticks;
 	frames[i].count = 1;
 	curr_proc->lastframe = i;
-	
+	kprintf("allcf : %d was chosen",i);
+	// for(int j = 0 ; j < NR_FRAMES;j++) {
+	// 	kprintf("%d ",j);
+	// }
+	// for(int j = 0 ; j < NR_FRAMES;j++) {
+	// 	kprintf("%d ",frames[i].count);
+	// }
 	return (i);
 }
 
