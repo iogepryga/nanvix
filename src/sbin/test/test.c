@@ -138,7 +138,7 @@ error0:
  * 
  * @returns Zero if passed on test, and non-zero otherwise.
  */
-static int frame_test1(int NB)
+static int swp_test1(int NB)
 {
 	int *a, *b, *c;
 	clock_t t0, t1;
@@ -162,7 +162,7 @@ static int frame_test1(int NB)
 		c[i] = 0;
 	}
 
-	printf("Initialisation finished\n");
+	printf("Init finished\n");
 	
 	/* Multiply matrices. */
 	if (flags & (EXTENDED | FULL))
@@ -213,7 +213,7 @@ error0:
 	return (-1);
 }
 
-static int frame_test2(int NB)
+static int swp_test2(int NB)
 {
 	int *a, *b, *c;
 	clock_t t0, t1;
@@ -244,11 +244,11 @@ static int frame_test2(int NB)
 	{	
 		for (int i = 0; i < NB; i++)
 		{
-			c[i] += a[i]*b[i];
+			c[i] += a[i]+b[i];
 		}
 	}
 
-	printf("Multiplication finished\n");
+	printf("Add finished\n");
 	
 	/* Check values. */
 	if (flags & FULL)
@@ -800,21 +800,23 @@ int main(int argc, char **argv)
 		}
 
 		/* Fill frame test. */
-		else if (!strcmp(argv[i], "frame1"))
+		else if (!strcmp(argv[i], "swp1"))
 		{
 			int NB = ((int) argv[2][0]) - (int)'0';
-			printf("Frame Test\n");
+			i++;
+			printf("Swapping Test 1\n");
 			printf("  Result:             [%s]\n",
-				(!frame_test1(NB*100)) ? "PASSED" : "FAILED");
+				(!swp_test1(NB*100)) ? "PASSED" : "FAILED");
 		}
 
 		/* Fill frame test. */
-		else if (!strcmp(argv[i], "frame1"))
+		else if (!strcmp(argv[i], "swp2"))
 		{
 			int NB = ((int) argv[2][0]) - (int)'0';
-			printf("Frame Test\n");
+			i++;
+			printf("Swapping Test 2\n");
 			printf("  Result:             [%s]\n",
-				(!frame_test2(NB*100)) ? "PASSED" : "FAILED");
+				(!swp_test2(NB*100)) ? "PASSED" : "FAILED");
 		}
 		
 		/* Scheduling test. */

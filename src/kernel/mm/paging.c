@@ -296,6 +296,7 @@ PRIVATE int allocf(void)
 {
 	// kprintf("NR_FRAMES : %d\n",NR_FRAMES);
 	int i;      /* Loop index.  */
+	unsigned int start = ticks;
 	// int oldest; /* Oldest page. */
 	
 	// #define OLDEST(x, y) (frames[x].age < frames[y].age)
@@ -312,11 +313,16 @@ PRIVATE int allocf(void)
 			goto emptyframefound;
 		
 		/* Local page replacement policy. */
-		if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1))
+		if (frames[i].owner == curr_proc->pid)
 		{
+			if(frames[i].count > 1)
+				continue;
+
 			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
 			if(pteframe->accessed == 1) {
+				// kprintf("Before : %d",pteframe->accessed);
 				pteframe->accessed = 0;
+				// kprintf("After : %d",pteframe->accessed);
 			} else {
 				goto found;
 			}
@@ -329,11 +335,16 @@ PRIVATE int allocf(void)
 			goto emptyframefound;
 		
 		/* Local page replacement policy. */
-		if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1))
+		if (frames[i].owner == curr_proc->pid)
 		{
+			if(frames[i].count > 1)
+				continue;
+
 			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
 			if(pteframe->accessed == 1) {
-				pteframe->accessed = 0;
+				// kprintf("Before : %d",pteframe->accessed);
+				pteframe->accessed &= 0xfffffffe;
+				// kprintf("After : %d",pteframe->accessed);
 			} else {
 				goto found;
 			}
@@ -351,7 +362,7 @@ emptyframefound:
 	frames[i].age = ticks;
 	frames[i].count = 1;
 	curr_proc->lastframe = i;
-	kprintf("allcf : %d was chosen",i);
+	kprintf("allcf : %d was chosen in %d ticks",i,ticks-start);
 	// for(int j = 0 ; j < NR_FRAMES;j++) {
 	// 	kprintf("%d ",j);
 	// }
