@@ -321,7 +321,7 @@ PRIVATE int allocf(void)
 			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
 			if(pteframe->accessed == 1) {
 				// kprintf("Before : %d",pteframe->accessed);
-				pteframe->accessed = 0;
+				pteframe->accessed &= 0xfffffffe;
 				// kprintf("After : %d",pteframe->accessed);
 			} else {
 				goto found;
