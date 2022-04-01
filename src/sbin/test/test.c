@@ -228,9 +228,12 @@ static void fill_and_use_frames(int nbframes)
 	if ((a = malloc(nbframes*4096*sizeof(int))) == NULL)
 		goto error0;
 
+	printf("fill and use :init start\n");
 	for(int i = 0 ; i < nbframes*4096 ; i++) {
 		a[i] = 2;
 	}
+
+	printf("fill and use :init done, start using\n");
 
 	for(int i = 0 ; i < nbframes ; i++) {
 		for(int j = 0; j < 4096 ;j++) {

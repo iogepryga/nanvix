@@ -305,11 +305,7 @@ PRIVATE int allocf(void)
 				sum++;
 			}
 		}
-		kprintf("Pages owned by %d : %d",curr_proc->pid,sum);
-	}
-
-	if(verb) {
-		kprintf("State before :");
+		kprintf("Pages owned by %d : %d. State before :",curr_proc->pid,sum);
 		for (int j = 0; j < NR_FRAMES; j++)
 		{
 			if(frames[j].count != 0 && frames[j].owner == curr_proc->pid) {
@@ -321,42 +317,45 @@ PRIVATE int allocf(void)
 				}
 			}
 		}
-		kprintf(" ");
+		kprintf("");
 	}
 
-	int nextframe = curr_proc->lastframe;
-	int restarted = 0;
-	int bound = NR_FRAMES;
 	int i;
 
-	for (i = nextframe; i < bound; i++)
-	{
+	for(i = curr_proc->lastframe; i < NR_FRAMES ;i++) {
 		if (frames[i].count == 0) {
 			goto emptyframefound;
 		}
 
-		if (frames[i].owner == curr_proc->pid)
+		if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1))
 		{
-			if(frames[i].count > 1)
-				continue;
-
 			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
 			if(pteframe->accessed == 1) {
-				pteframe->accessed = 0; // &= 0xfffffffe;
+				pteframe->accessed = 0;
 			} else {
 				goto found;
 			}
 		}
+	}
 
-		if(i+1 == NR_FRAMES && restarted <= 1) {
-			restarted++;
-			i = -1;
-			if(restarted == 2) {
-				bound = (nextframe+1)%NR_FRAMES;
+	for(i = 0; i < NR_FRAMES ;i++) {
+		if (frames[i].count == 0) {
+			goto emptyframefound;
+		}
+
+		if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1))
+		{
+			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
+			if(pteframe->accessed == 1) {
+				pteframe->accessed = 0;
+			} else {
+				goto found;
 			}
 		}
 	}
-	
+
+	return(-1);
+
 found:
 
 	if (swap_out(curr_proc, frames[i].addr))
@@ -370,8 +369,7 @@ emptyframefound:
 
 	
 	if(verb) {
-		kprintnf("allcf : %d was chosen. ",i);
-		kprintf("State after :");
+		kprintf("%d was chosen. nexttimestartingframe : %d. State after :",i,curr_proc->lastframe);
 		for (int j = 0; j < NR_FRAMES; j++)
 		{
 			if(frames[j].count != 0 && frames[j].owner == curr_proc->pid) {
@@ -383,60 +381,9 @@ emptyframefound:
 				}
 			}
 		}
-		kprintf(" ");
+		kprintf("");
 	}
 	return (i);
-
-// 	int i;      /* Loop index.  */
-// 	int oldest; /* Oldest page. */
-	
-// 	#define OLDEST(x, y) (frames[x].age < frames[y].age)
-	
-// 	/* Search for a free frame. */
-// 	oldest = -1;
-// 	for (i = 0; i < NR_FRAMES; i++)
-// 	{
-// 		/* Found it. */
-// 		if (frames[i].count == 0)
-// 			goto found;
-		
-// 		/* Local page replacement policy. */
-// 		if (frames[i].owner == curr_proc->pid)
-// 		{
-// 			/* Skip shared pages. */
-// 			if (frames[i].count > 1)
-// 				continue;
-			
-// 			/* Oldest page found. */
-// 			if ((oldest < 0) || (OLDEST(i, oldest)))
-// 				oldest = i;
-// 		}
-// 	}
-
-// 	/* No frame left. */
-// 	if (oldest < 0)
-// 		return (-1);
-
-// 	kprintf("%d with age of %d among :",oldest,frames[oldest].age);
-// 	for (int j = 0; j < NR_FRAMES; j++)
-// 	{
-// 		if(frames[j].count != 0 && frames[j].owner == curr_proc->pid) {
-// 			kprintf("frames %d : %d",j,frames[j].age);
-// 		}
-// 	}
-	
-// 	/* Swap page out. */
-// 	if (swap_out(curr_proc, frames[i = oldest].addr))
-// 		return (-1);
-	
-// found:		
-
-// 	frames[i].age = ticks;
-// 	frames[i].count = 1;
-// 	kprintf("allcf : %d was chosen\n===============================",i);
-	
-// 	return (i);
-
 }
 
 /**
