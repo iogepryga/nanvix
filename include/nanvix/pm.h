@@ -151,6 +151,7 @@
 		struct pregion pregs[NR_PREGIONS]; /**< Process memory regions. */
 		size_t size;                       /**< Process size.           */
 		int lastframe;
+		int verb;
 		/**@}*/
 
 		/**

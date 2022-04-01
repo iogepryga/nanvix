@@ -52,7 +52,7 @@ static unsigned flags = VERBOSE | FULL;
  */
 static int swap_test(void)
 {
-	#define N 900
+	#define N 1280
 	int *a, *b, *c;
 	clock_t t0, t1;
 	struct tms timing;
@@ -126,54 +126,42 @@ error0:
 	return (-1);
 }
 
-/*============================================================================*
- *                               frame_test                                    *
- *============================================================================*/
-
-/**
- * @brief Frame test module.
- * 
- * @details Forces swapping algorithms to be activated by performing a large
- *          matrix multiplication operation that does not fit on memory.
- * 
- * @returns Zero if passed on test, and non-zero otherwise.
- */
-static int swp_test1(int NB)
+static int swapK_test(int K)
 {
 	int *a, *b, *c;
 	clock_t t0, t1;
 	struct tms timing;
 
 	/* Allocate matrices. */
-	if ((a = malloc(NB*NB*sizeof(int))) == NULL)
+	if ((a = malloc(K*K*sizeof(int))) == NULL)
 		goto error0;
-	if ((b = malloc(NB*NB*sizeof(int))) == NULL)
+	if ((b = malloc(K*K*sizeof(int))) == NULL)
 		goto error1;
-	if ((c = malloc(NB*NB*sizeof(int))) == NULL)
+	if ((c = malloc(K*K*sizeof(int))) == NULL)
 		goto error2;
 		
 	t0 = times(&timing);
 	
 	/* Initialize matrices. */
-	for (int i = 0; i < NB*NB; i++)
+	for (int i = 0; i < K*K; i++)
 	{
 		a[i] = 1;
 		b[i] = 1;
 		c[i] = 0;
 	}
 
-	printf("Init finished\n");
+	printf("Initialisation finished\n");
 	
 	/* Multiply matrices. */
 	if (flags & (EXTENDED | FULL))
 	{	
-		for (int i = 0; i < NB; i++)
+		for (int i = 0; i < K; i++)
 		{
-			printf("i = %d/%d\n",i,NB);
-			for (int j = 0; j < NB; j++)
+			printf("i = %d/%d\n",i,K);
+			for (int j = 0; j < K; j++)
 			{
-				for (int k = 0; k < N; k++)
-					c[i*NB + j] += a[i*NB + k]*b[k*NB + j];
+				for (int k = 0; k < K; k++)
+					c[i*K + j] += a[i*K + k]*b[k*K + j];
 			}
 		}
 	}
@@ -183,9 +171,9 @@ static int swp_test1(int NB)
 	/* Check values. */
 	if (flags & FULL)
 	{
-		for (int i = 0; i < NB*NB; i++)
+		for (int i = 0; i < K*K; i++)
 		{
-			if (c[i] != NB)
+			if (c[i] != K)
 				goto error3;
 		}
 	}
@@ -213,74 +201,100 @@ error0:
 	return (-1);
 }
 
-static int swp_test2(int NB)
+static char* fill_frames(int nbframes)
 {
-	int *a, *b, *c;
-	clock_t t0, t1;
-	struct tms timing;
-
-	/* Allocate matrices. */
-	if ((a = malloc(NB*sizeof(int))) == NULL)
+	printf("filling %d frames\n", nbframes);
+	char *a;
+	if ((a = malloc(nbframes*4096*sizeof(int))) == NULL)
 		goto error0;
-	if ((b = malloc(NB*sizeof(int))) == NULL)
-		goto error1;
-	if ((c = malloc(NB*sizeof(int))) == NULL)
-		goto error2;
-		
-	t0 = times(&timing);
-	
-	/* Initialize matrices. */
-	for (int i = 0; i < NB; i++)
-	{
-		a[i] = 3;
-		b[i] = 1;
-		c[i] = 0;
+
+	for(int i = 0 ; i < nbframes*4096 ; i++) {
+		a[i] = 2;
 	}
 
-	printf("Initialisation finished\n");
-	
-	/* Multiply matrices. */
-	if (flags & (EXTENDED | FULL))
-	{	
-		for (int i = 0; i < NB; i++)
-		{
-			c[i] += a[i]+b[i];
+	printf("filling done\n");
+
+	return (a);
+error0:
+	printf("fill_frames : error while malloc");
+	return ((char*)-1);
+}
+
+static void fill_and_use_frames(int nbframes)
+{
+	nice(1000);
+	printf("filling and using %d frames\n", nbframes);
+	char *a;
+	if ((a = malloc(nbframes*4096*sizeof(int))) == NULL)
+		goto error0;
+
+	for(int i = 0 ; i < nbframes*4096 ; i++) {
+		a[i] = 2;
+	}
+
+	for(int i = 0 ; i < nbframes ; i++) {
+		for(int j = 0; j < 4096 ;j++) {
+			a[i*4096+j] *= 2;
+		}
+		sleep(200);
+	}
+
+	int errors = 0;
+	for(int i = 0 ; i < nbframes*4096 ; i++) {
+		if (a[i] != 4) {
+			errors++;
 		}
 	}
 
-	printf("Add finished\n");
-	
-	/* Check values. */
-	if (flags & FULL)
-	{
-		for (int i = 0; i < NB; i++)
-		{
-			if (c[i] != a[i] + 1)
-				goto error3;
-		}
-	}
-	
-	/* House keeping. */
+
+	printf("filling and using done with %d errors\n", errors);
 	free(a);
-	free(b);
-	free(c);
+	// return (a);
+	return;
+error0:
+	printf("fill_and_use_frames : error while malloc");
+	// return ((char*)-1);
+}
+
+
+static int swp_test1()
+{
+	return swapK_test(100); 
+}
+
+static int swp_test2()
+{
+	printf("Test swp2 starting\n");
+	pid_t pid;
+
+	char *a = fill_frames(2020);
+
+	if(a == (char*)-1) {
+		return (-1);
+	}
 	
-	t1 = times(&timing);
+	printf("Test swp2 forking\n");
+	pid = fork();
+
+	/* Failed to fork(). */
+	if (pid < 0)
+		return (-1);
 	
-	/* Print timing statistics. */
-	if (flags & VERBOSE)
-		printf("  Elapsed: %d\n", t1 - t0);
+	/* Child process. */
+	else if (pid == 0)
+	{
+		printf("children (%d) testing\n",getpid());
+		fill_and_use_frames(20);
+		printf("children (%d) done\n",getpid());
+		_exit(EXIT_SUCCESS);
+	} else {
+		printf("father (%d) waiting\n",getpid());
+		wait(NULL);
+		printf("father (%d) freeing\n",getpid());
+		free(a);
+	}
 	
 	return (0);
-
-error3:
-	free(c);
-error2:
-	free(b);
-error1:
-	free(a);
-error0:
-	return (-1);
 }
 
 /*============================================================================*
@@ -802,21 +816,17 @@ int main(int argc, char **argv)
 		/* Fill frame test. */
 		else if (!strcmp(argv[i], "swp1"))
 		{
-			int NB = ((int) argv[2][0]) - (int)'0';
-			i++;
 			printf("Swapping Test 1\n");
 			printf("  Result:             [%s]\n",
-				(!swp_test1(NB*100)) ? "PASSED" : "FAILED");
+				(!swp_test1()) ? "PASSED" : "FAILED");
 		}
 
 		/* Fill frame test. */
 		else if (!strcmp(argv[i], "swp2"))
 		{
-			int NB = ((int) argv[2][0]) - (int)'0';
-			i++;
-			printf("Swapping Test 2\n");
+			printf("Swapping Test 1\n");
 			printf("  Result:             [%s]\n",
-				(!swp_test2(NB*100)) ? "PASSED" : "FAILED");
+				(!swp_test2()) ? "PASSED" : "FAILED");
 		}
 		
 		/* Scheduling test. */

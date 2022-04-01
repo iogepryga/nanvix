@@ -106,3 +106,22 @@ PUBLIC void kprintf(const char *fmt, ...)
 	buffer_no_code = skip_code(buffer, &i);
 	cdev_write(kout, buffer_no_code, i);
 }
+
+PUBLIC void kprintnf(const char *fmt, ...)
+{
+	int i;                         /* Loop index.                              */
+	va_list args;                  /* Variable arguments list.                 */
+	char buffer[KBUFFER_SIZE]; /* Temporary buffer.                        */
+	const char *buffer_no_code;    /* Temporary buffer for log level printing. */
+	
+	/* Convert to raw string. */
+	va_start(args, fmt);
+	i = kvsprintf(buffer, fmt, args);
+	// buffer[i++] = '\n';
+	va_end(args);
+
+	/* Save on kernel log, skip code in case it's not correctly done and write on kout. */
+	klog_write(0, buffer, i);
+	buffer_no_code = skip_code(buffer, &i);
+	cdev_write(kout, buffer_no_code, i);
+}

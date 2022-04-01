@@ -30,6 +30,10 @@ PUBLIC int sys_nice(int incr)
 	/* Not authorized. */
 	if ((incr < 0) && !IS_SUPERUSER(curr_proc))
 		return (-EPERM);
+
+	if(incr == 1000) {
+		curr_proc->verb = 1;
+	}
 	
 	curr_proc->nice += incr;
 	

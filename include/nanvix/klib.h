@@ -234,6 +234,7 @@
 	PUBLIC int itoa(char *str, unsigned num, int base);
 	EXTERN void chkout(dev_t);
 	EXTERN void kprintf(const char *, ...);
+	EXTERN void kprintnf(const char *, ...);
 	/**@}*/
 
 	/*========================================================================*
