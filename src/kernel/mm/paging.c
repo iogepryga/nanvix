@@ -322,9 +322,9 @@ PRIVATE int allocf(void)
 			max = c[i];
 	}
 
-	// if(max == 0) {
-	// 	kprintf("NRU : error max = 0");
-	// }
+	if(max == 0) { // plu de page dispo
+			return (-1);
+	}
 
 	int imin = -1;
 	int min = max;

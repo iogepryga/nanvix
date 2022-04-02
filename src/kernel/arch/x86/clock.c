@@ -55,7 +55,7 @@ PRIVATE void do_clock()
 					continue;
 				struct pte *pteframe = getpte(p,frames[i].addr);
 				if(pteframe->accessed == 1) {
-					if(p->name[0] == 't' && p->name[1] == 'e' && p->name[2] == 's' && p->name[3] == 't') {
+					if(p->verb) { //if(p->name[0] == 't' && p->name[1] == 'e' && p->name[2] == 's' && p->name[3] == 't') {
 						kprintf("clock : frame %d'R bit reset of %d (pid)",i,frames[i].owner);
 					}
 					pteframe->accessed = 0;
