@@ -37,28 +37,6 @@
 	#error "swapping area to small"
 #endif
 
-/**
- * @brief Gets a page directory entry of a process.
- * 
- * @param p Process.
- * @param a Address.
- * 
- * @returns The requested page directory entry.
- */
-#define getpde(p, a) \
-	(&(p)->pgdir[PGTAB(a)])
-
-/**
- * @brief Gets a page table entry of a process.
- * 
- * @param p Process.
- * @param a Address.
- * 
- * @returns The requested page table entry.
- */
-#define getpte(p, a) \
-	(&((struct pte *)((getpde(p, a)->frame << PAGE_SHIFT) + KBASE_VIRT))[PG(a)])
-
 
 /*============================================================================*
  *                             Swapping System                                *
@@ -271,19 +249,18 @@ PUBLIC void putkpg(void *kpg)
  *                              Paging System                                 *
  *============================================================================*/
 
-/* Number of page frames. */
-#define NR_FRAMES (UMEM_SIZE/PAGE_SIZE)
-
 /**
  * @brief Page frames.
  */
-PRIVATE struct
-{
-	unsigned count; /**< Reference count.     */
-	unsigned age;   /**< Age.                 */
-	pid_t owner;    /**< Page owner.          */
-	addr_t addr;    /**< Address of the page. */
-} frames[NR_FRAMES] = {{0, 0, 0, 0},  };
+// PRIVATE struct
+// {
+// 	unsigned count; /**< Reference count.     */
+// 	unsigned age;   /**< Age.                 */
+// 	pid_t owner;    /**< Page owner.          */
+// 	addr_t addr;    /**< Address of the page. */
+// } frames[NR_FRAMES] = {{0, 0, 0, 0},  };
+
+PUBLIC struct mmframe frames[NR_FRAMES] = {{0, 0, 0, 0},  };
 
 /**
  * @brief Allocates a page frame.
@@ -295,7 +272,6 @@ PRIVATE struct
 PRIVATE int allocf(void)
 {
 	int verb = curr_proc->verb;
-
 	if(verb) {
 		kprintf("===========allocf(%s)==========",curr_proc->name);
 		/*CHECK NB PAGE PER PROC*/
@@ -310,53 +286,81 @@ PRIVATE int allocf(void)
 		{
 			if(frames[j].count != 0 && frames[j].owner == curr_proc->pid) {
 				struct pte *pteframe = getpte(curr_proc,frames[j].addr);
-				if(j==curr_proc->lastframe) {
-					kprintnf("[%d : %d] ",j,pteframe->accessed);
-				} else {
-					kprintnf("(%d : %d) ",j,pteframe->accessed);
-				}
+				kprintnf("(%d : %d,%d) ",j,pteframe->accessed,pteframe->dirty);
 			}
 		}
 		kprintf("");
 	}
 
 	int i;
-
-	for(i = curr_proc->lastframe; i < NR_FRAMES ;i++) {
-		if (frames[i].count == 0) {
-			goto emptyframefound;
-		}
-
-		if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1))
-		{
-			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
-			if(pteframe->accessed == 1) {
-				pteframe->accessed = 0;
-			} else {
-				goto found;
-			}
-		}
-	}
+	int c[4];
+	c[0] = 0;
+	c[1] = 0;
+	c[2] = 0;
+	c[3] = 0;
 
 	for(i = 0; i < NR_FRAMES ;i++) {
 		if (frames[i].count == 0) {
 			goto emptyframefound;
-		}
-
-		if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1))
-		{
+		} else if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1)){
 			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
-			if(pteframe->accessed == 1) {
-				pteframe->accessed = 0;
-			} else {
-				goto found;
+			if(pteframe->accessed == 1 && pteframe->dirty == 1) {
+				c[3]++;
+			} else if (pteframe->accessed == 0 && pteframe->dirty == 1){
+				c[2]++;
+			} else if (pteframe->accessed == 1 && pteframe->dirty == 0){
+				c[1]++;
+			} else if (pteframe->accessed == 0 && pteframe->dirty == 0){
+				c[0]++;
 			}
 		}
 	}
 
-	return(-1);
+	int max = 0;
+	for(i = 0 ; i < 4 ; i++) {
+		if(c[i] > max)
+			max = c[i];
+	}
 
-found:
+	// if(max == 0) {
+	// 	kprintf("NRU : error max = 0");
+	// }
+
+	int imin = -1;
+	int min = max;
+	for(int i = 0; i < 4 ; i++) {
+		if(c[i] != 0 && c[i] <= min) {
+			imin = i;
+			min = c[i];
+		}
+	}
+
+	int index_proc_frame = (ticks%c[imin]) + 1;
+	int iframe = 0;
+	for(i = 0; i < NR_FRAMES ;i++) {
+		if (frames[i].count == 0) {
+			continue;
+		} else if (frames[i].owner == curr_proc->pid && !(frames[i].count > 1)){
+			struct pte *pteframe = getpte(curr_proc,frames[i].addr);
+			if(imin == 3 && pteframe->accessed == 1 && pteframe->dirty == 1) {
+				iframe++;
+			} else if (imin == 2 && pteframe->accessed == 0 && pteframe->dirty == 1){
+				iframe++;
+			} else if (imin == 1 && pteframe->accessed == 1 && pteframe->dirty == 0){
+				iframe++;
+			} else if (imin == 0 && pteframe->accessed == 0 && pteframe->dirty == 0){
+				iframe++;
+			}
+		}
+		if(index_proc_frame == iframe) {
+			break;
+		}
+	}
+
+	if(verb) {
+		kprintf("NRU : c {%d,%d,%d,%d}, will chose frame %d from c%d",c[0],c[1],c[2],c[3],i,imin);
+	}
+
 
 	if (swap_out(curr_proc, frames[i].addr))
 		return (-1);
@@ -365,20 +369,13 @@ emptyframefound:
 
 	frames[i].age = ticks;
 	frames[i].count = 1;
-	curr_proc->lastframe = (i+1)%NR_FRAMES;
-
-	
 	if(verb) {
-		kprintf("%d was chosen. nexttimestartingframe : %d. State after :",i,curr_proc->lastframe);
+		kprintf("%d was chosen. State after :",i);
 		for (int j = 0; j < NR_FRAMES; j++)
 		{
 			if(frames[j].count != 0 && frames[j].owner == curr_proc->pid) {
 				struct pte *pteframe = getpte(curr_proc,frames[j].addr);
-				if(j==curr_proc->lastframe) {
-					kprintnf("[%d : %d] ",j,pteframe->accessed);
-				} else {
-					kprintnf("(%d : %d) ",j,pteframe->accessed);
-				}
+				kprintnf("(%d : %d,%d) ",j,pteframe->accessed,pteframe->dirty);
 			}
 		}
 		kprintf("");

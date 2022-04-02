@@ -54,7 +54,42 @@
 	/* User memory size. */
 	#define UMEM_SIZE (MEMORY_SIZE - KMEM_SIZE - KPOOL_SIZE)
 
+	/* Number of page frames. */
+	#define NR_FRAMES (UMEM_SIZE/PAGE_SIZE)
+
+	/**
+ * @brief Gets a page directory entry of a process.
+ * 
+ * @param p Process.
+ * @param a Address.
+ * 
+ * @returns The requested page directory entry.
+ */
+#define getpde(p, a) \
+	(&(p)->pgdir[PGTAB(a)])
+
+/**
+ * @brief Gets a page table entry of a process.
+ * 
+ * @param p Process.
+ * @param a Address.
+ * 
+ * @returns The requested page table entry.
+ */
+#define getpte(p, a) \
+	(&((struct pte *)((getpde(p, a)->frame << PAGE_SHIFT) + KBASE_VIRT))[PG(a)])
+
 #ifndef _ASM_FILE_
+
+	struct mmframe
+	{
+		unsigned count; /**< Reference count.     */
+		unsigned age;   /**< Age.                 */
+		pid_t owner;    /**< Page owner.          */
+		addr_t addr;    /**< Address of the page. */
+	};
+	
+	EXTERN struct mmframe frames[NR_FRAMES];
 	
 	/* Forward definitions. */
 	EXTERN int chkmem(const void *, size_t, mode_t);

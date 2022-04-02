@@ -21,6 +21,7 @@
 #include <nanvix/hal.h>
 #include <nanvix/klib.h>
 #include <nanvix/pm.h>
+#include <nanvix/mm.h>
 
 /* Clock ticks since system initialization. */
 PUBLIC unsigned ticks = 0;
@@ -28,12 +29,40 @@ PUBLIC unsigned ticks = 0;
 /* Time at system startup. */
 PUBLIC unsigned startup_time = 0;
 
+static struct process* getbypid (int pid)
+{
+	for(struct process *p = FIRST_PROC; p < LAST_PROC; p++) {
+		if(p->pid == pid) {
+			return p;
+		}
+	}
+	return NULL;
+}
+
+
 /*
  * Handles a timer interrupt.
  */
 PRIVATE void do_clock()
 {
 	ticks++;
+
+	if((ticks % 50000) == 0) {
+		for(int i = 0 ; i < NR_FRAMES ; i++) {
+			if(frames[i].count != 0) {
+				struct process *p = getbypid(frames[i].owner);
+				if(p == NULL || p->pid == 0)
+					continue;
+				struct pte *pteframe = getpte(p,frames[i].addr);
+				if(pteframe->accessed == 1) {
+					if(p->name[0] == 't' && p->name[1] == 'e' && p->name[2] == 's' && p->name[3] == 't') {
+						kprintf("clock : frame %d'R bit reset of %d (pid)",i,frames[i].owner);
+					}
+					pteframe->accessed = 0;
+				}
+			}
+		}
+	}
 	
 	if (KERNEL_RUNNING(curr_proc))
 	{
